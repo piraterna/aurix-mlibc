@@ -5,6 +5,12 @@
 #include <mlibc/all-sysdeps.hpp>
 #include <string.h>
 
+#define SYS_EXIT  0
+#define SYS_OPEN  1
+#define SYS_READ  2
+#define SYS_WRITE  3
+#define SYS_CLOSE  4
+
 #define STUB()                                                                                     \
 	({                                                                                             \
 		__ensure(!"STUB function was called");                                                     \
@@ -24,7 +30,7 @@ void Sysdeps<LibcLog>::operator()(const char *msg) {
 }
 
 int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
-	return 0;
+	STUB();
 }
 
 int Sysdeps<TcbSet>::operator()(void *pointer) {
