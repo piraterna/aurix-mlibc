@@ -30,6 +30,12 @@ void Sysdeps<LibcLog>::operator()(const char *msg) {
 	sysdep<Write>(1, msg, strlen(msg), &_ignored);
 }
 
+int Sysdeps<Isatty>::operator()(int fd) {
+	(void)fd;
+	return 0; // no tty stuff impl
+}
+
+
 int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
 	*ret = syscall(SYS_WRITE, fd, buf, size);
 	return 0;
