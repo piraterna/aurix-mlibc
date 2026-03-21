@@ -58,45 +58,50 @@ if not no_headers
 endif
 
 if not headers_only
-	crt = custom_target('crt1',
-		build_by_default: true,
-		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
-		input: 'crt-x86_64/crt1.S',
-		output: 'crt1.o',
-		install: true,
-		install_dir: get_option('libdir')
-	)
-endif
+    crt = custom_target('crt0',
+        build_by_default: true,
+        command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+        input: 'crt-x86_64/crt0.S',
+        output: 'crt0.o',
+        install: true,
+        install_dir: get_option('libdir')
+    )
 
-if not headers_only
-	crt = custom_target('crti',
-		build_by_default: true,
-		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
-		input: 'crt-x86_64/crti.S',
-		output: 'crti.o',
-		install: true,
-		install_dir: get_option('libdir')
-	)
-endif
+	custom_target('Scrt1',
+        build_by_default: true,
+        command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+        input: 'crt-x86_64/Scrt1.S',
+        output: 'Scrt1.o',
+        install: true,
+        install_dir: get_option('libdir')
+    )
 
-if not headers_only
-	crt = custom_target('crtn',
-		build_by_default: true,
-		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
-		input: 'crt-x86_64/crtn.S',
-		output: 'crtn.o',
-		install: true,
-		install_dir: get_option('libdir')
-	)
-endif
+	custom_target('crti',
+        build_by_default: true,
+        command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+        input: 'crt-x86_64/crti.S',
+        output: 'crti.o',
+        install: true,
+        install_dir: get_option('libdir')
+    )
 
-if not headers_only
-	crt = custom_target('Scrt1',
-		build_by_default: true,
-		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
-		input: 'crt-x86_64/Scrt1.S',
-		output: 'Scrt1.o',
-		install: true,
-		install_dir: get_option('libdir')
+	custom_target('crtn',
+        build_by_default: true,
+        command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+        input: 'crt-x86_64/crtn.S',
+        output: 'crtn.o',
+        install: true,
+        install_dir: get_option('libdir')
+    )
+
+	rtld_sources += files(
+		'generic/syscalls.cpp',
 	)
+	rtld_include_dirs += include_directories('include')
+
+	libc_sources += files(
+		'generic/entry.cpp',
+		'generic/syscalls.cpp',
+	)
+	libc_include_dirs += include_directories('include')
 endif
