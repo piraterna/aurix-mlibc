@@ -32,6 +32,7 @@ void Sysdeps<LibcPanic>::operator()() {
 void Sysdeps<LibcLog>::operator()(const char *msg) {
 	ssize_t _ignored = 0;
 	sysdep<Write>(1, msg, strlen(msg), &_ignored);
+	sysdep<Write>(1, "\n", 1, &_ignored);
 }
 
 int Sysdeps<Isatty>::operator()(int fd) {
