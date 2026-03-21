@@ -2,6 +2,10 @@
 
 using sc_word_t = __sc_word_t;
 
+extern "C" long __do_syscall_ret(unsigned long ret) {
+	return ret;
+}
+
 sc_word_t __do_syscall0(long sc) {
 	sc_word_t ret;
 	asm volatile ("syscall" : "=a"(ret)
@@ -75,3 +79,4 @@ sc_word_t __do_syscall6(long sc,
 			: "rcx", "r11", "memory");
 	return ret;
 }
+
