@@ -29,8 +29,9 @@ void Sysdeps<LibcLog>::operator()(const char *msg) {
 	sysdep<Write>(1, msg, strlen(msg));
 }
 
-int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size) {
-	return (int)syscall(SYS_WRITE, buf, size);
+int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
+	*ret = syscall(SYS_WRITE, fd, buf, size);
+	return 0;
 }
 
 int Sysdeps<TcbSet>::operator()(void *pointer) {
