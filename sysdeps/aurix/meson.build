@@ -102,7 +102,7 @@ if not headers_only
 
 	libc_sources += files(
 		'generic/entry.cpp',
-		'generic/syscalls.cpp',
+		'generic/sysdeps.cpp',
 	)
 	libc_include_dirs += include_directories('include')
 endif
