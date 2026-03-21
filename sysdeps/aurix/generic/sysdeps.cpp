@@ -30,7 +30,7 @@ void Sysdeps<LibcLog>::operator()(const char *msg) {
 }
 
 int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size) {
-	STUB();
+	return (int)syscall(SYS_WRITE, buf, size);
 }
 
 int Sysdeps<TcbSet>::operator()(void *pointer) {
