@@ -1,5 +1,6 @@
 #include "mlibc/tcb.hpp"
 #include <abi-bits/errno.h>
+#include <abi-bits/vm-flags.h>
 #include <bits/ensure.h>
 #include <bits/syscall.h>
 #include <mlibc/all-sysdeps.hpp>
@@ -10,6 +11,7 @@
 #define SYS_READ  2
 #define SYS_WRITE  3
 #define SYS_CLOSE  4
+#define SYS_MMAP 9
 
 #define STUB()                                                                                     \
 	({                                                                                             \
@@ -46,7 +48,14 @@ int Sysdeps<TcbSet>::operator()(void *pointer) {
 }
 
 int Sysdeps<AnonAllocate>::operator()(size_t size, void **pointer) {
-	STUB();
+	auto ret = syscall(SYS_MMAP, nullptr, size,
+			PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS,
+			-1, 0);
+	if(ret < 0)
+		return -ret;
+	*pointer = reinterpret_cast<void *>(ret);
+	return 0;
 }
 
 int Sysdeps<AnonFree>::operator()(void *, unsigned long) {	
@@ -54,7 +63,6 @@ int Sysdeps<AnonFree>::operator()(void *, unsigned long) {
 }
 
 int Sysdeps<Seek>::operator()(int, off_t, int, off_t *) {
-	
 	STUB();
 }
 
