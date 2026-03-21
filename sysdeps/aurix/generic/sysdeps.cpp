@@ -53,6 +53,7 @@ int Sysdeps<TcbSet>::operator()(void *pointer) {
 	auto sc_ret = syscall(SYS_SET_FS_BASE, pointer);
 	if (int e = sc_error(sc_ret); e)
 		return e;
+	sysdep<LibcLog>("we back!\n");
 	return 0;
 }
 
