@@ -56,3 +56,47 @@ if not no_headers
 		follow_symlinks: true
 	)
 endif
+
+if not headers_only
+	crt = custom_target('crt1',
+		build_by_default: true,
+		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+		input: 'crt/x86_64/crt1.S',
+		output: 'crt1.o',
+		install: true,
+		install_dir: get_option('libdir')
+	)
+endif
+
+if not headers_only
+	crt = custom_target('crti',
+		build_by_default: true,
+		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+		input: 'crt/x86_64/crti.S',
+		output: 'crti.o',
+		install: true,
+		install_dir: get_option('libdir')
+	)
+endif
+
+if not headers_only
+	crt = custom_target('crtn',
+		build_by_default: true,
+		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+		input: 'crt/x86_64/crtn.S',
+		output: 'crtn.o',
+		install: true,
+		install_dir: get_option('libdir')
+	)
+endif
+
+if not headers_only
+	crt = custom_target('Scrt1',
+		build_by_default: true,
+		command: c_compiler.cmd_array() + ['-c', '-o', '@OUTPUT@', '@INPUT@'],
+		input: 'crt/x86_64/Scrt1.S',
+		output: 'Scrt1.o',
+		install: true,
+		install_dir: get_option('libdir')
+	)
+endif
