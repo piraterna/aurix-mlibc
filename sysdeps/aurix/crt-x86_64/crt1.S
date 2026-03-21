@@ -1,8 +1,8 @@
 .section .text
 .global _start
 _start:
-	lea main(%rip), %rdi
-	mov %rsp, %rsi
-	call __mlibc_entry
-
+    mov %rsp, %rdi
+    and $0xFFFFFFFFFFFFFFF0, %rsp
+    mov $main, %rsi
+    call __mlibc_entry
 .section .note.GNU-stack,"",%progbits
