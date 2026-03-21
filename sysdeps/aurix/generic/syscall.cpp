@@ -1,4 +1,3 @@
-#include <sys/syscall.h>
 #include <bits/syscall.h>
 
 using sc_word_t = __sc_word_t;
