@@ -96,14 +96,14 @@ if not headers_only
     )
 
 	rtld_sources += files(
-		'generic/syscalls.cpp',
+		'generic/syscall.cpp',
 		'generic/sysdeps.cpp',
 	)
 	rtld_include_dirs += include_directories('include')
 
 	libc_sources += files(
 		'generic/entry.cpp',
-		'generic/syscalls.cpp',
+		'generic/syscall.cpp',
 		'generic/sysdeps.cpp',
 	)
 	libc_include_dirs += include_directories('include')
