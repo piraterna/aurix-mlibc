@@ -26,10 +26,10 @@ void Sysdeps<LibcPanic>::operator()() {
 }
 
 void Sysdeps<LibcLog>::operator()(const char *msg) {
-	sysdep<Write>(1, msg, 0);
+	sysdep<Write>(1, msg, strlen(msg));
 }
 
-int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
+int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size) {
 	STUB();
 }
 
