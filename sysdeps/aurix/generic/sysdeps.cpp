@@ -1,23 +1,25 @@
 #include "mlibc/tcb.hpp"
 #include <abi-bits/errno.h>
 #include <abi-bits/vm-flags.h>
-#include <bits/ensure.h>
 #include <bits/syscall.h>
 #include <mlibc/all-sysdeps.hpp>
+#include <stdint.h>
 #include <string.h>
 
-#define SYS_EXIT  0
-#define SYS_OPEN  1
-#define SYS_READ  2
-#define SYS_WRITE  3
-#define SYS_CLOSE  4
+#define SYS_EXIT 0
+#define SYS_OPEN 1
+#define SYS_READ 2
+#define SYS_WRITE 3
+#define SYS_CLOSE 4
 #define SYS_MMAP 9
+#define SYS_LSEEK 10
+#define SYS_MUNMAP 11
+#define SYS_CLOCK_GET 12
+#define SYS_SET_FS_BASE 13
 
-#define STUB()                                                                                     \
-	({                                                                                             \
-		__ensure(!"STUB function was called");                                                     \
-		__builtin_unreachable();                                                                   \
-	})
+namespace {
+inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
+} // namespace
 
 namespace mlibc {
 
@@ -37,33 +39,43 @@ int Sysdeps<Isatty>::operator()(int fd) {
 	return 0; // no tty stuff impl
 }
 
-
 int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
-	*ret = syscall(SYS_WRITE, fd, buf, size);
+	auto sc_ret = syscall(SYS_WRITE, fd, buf, size);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (ret)
+		*ret = static_cast<ssize_t>(sc_ret);
 	return 0;
 }
 
 int Sysdeps<TcbSet>::operator()(void *pointer) {
-	STUB();
-}
-
-int Sysdeps<AnonAllocate>::operator()(size_t size, void **pointer) {
-	auto ret = syscall(SYS_MMAP, nullptr, size,
-			PROT_READ | PROT_WRITE,
-			MAP_PRIVATE | MAP_ANONYMOUS,
-			-1, 0);
-	if(ret < 0)
-		return -ret;
-	*pointer = reinterpret_cast<void *>(ret);
+	auto sc_ret = syscall(SYS_SET_FS_BASE, pointer);
+	if (int e = sc_error(sc_ret); e)
+		return e;
 	return 0;
 }
 
-int Sysdeps<AnonFree>::operator()(void *, unsigned long) {	
-	STUB();
+int Sysdeps<AnonAllocate>::operator()(size_t size, void **pointer) {
+	auto sc_ret = syscall(
+	    SYS_MMAP, nullptr, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0
+	);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	*pointer = reinterpret_cast<void *>(sc_ret);
+	return 0;
 }
 
-int Sysdeps<Seek>::operator()(int, off_t, int, off_t *) {
-	STUB();
+int Sysdeps<AnonFree>::operator()(void *pointer, unsigned long size) {
+	return sysdep<VmUnmap>(pointer, size);
+}
+
+int Sysdeps<Seek>::operator()(int fd, off_t offset, int whence, off_t *new_offset) {
+	auto sc_ret = syscall(SYS_LSEEK, fd, offset, whence);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (new_offset)
+		*new_offset = static_cast<off_t>(sc_ret);
+	return 0;
 }
 
 void Sysdeps<Exit>::operator()(int status) {
@@ -71,30 +83,55 @@ void Sysdeps<Exit>::operator()(int status) {
 	__builtin_unreachable();
 }
 
-int Sysdeps<Close>::operator()(int) {
-	STUB();
+int Sysdeps<Close>::operator()(int fd) {
+	auto sc_ret = syscall(SYS_CLOSE, fd);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
 
-int Sysdeps<FutexWake>::operator()(int *, bool) {
-	STUB();
+int Sysdeps<FutexWake>::operator()(int *, bool) { return 0; }
+int Sysdeps<FutexWait>::operator()(int *pointer, int expected, timespec const *) {
+	if (__atomic_load_n(pointer, __ATOMIC_RELAXED) != expected)
+		return EAGAIN;
+	return ENOSYS;
 }
-int Sysdeps<FutexWait>::operator()(int *, int, timespec const *) {
-	STUB();
+int Sysdeps<Read>::operator()(int fd, void *buf, unsigned long size, long *ret) {
+	auto sc_ret = syscall(SYS_READ, fd, buf, size);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (ret)
+		*ret = sc_ret;
+	return 0;
 }
-int Sysdeps<Read>::operator()(int, void *, unsigned long, long *) {
-	STUB();
+int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, int *fd) {
+	auto sc_ret = syscall(SYS_OPEN, path, flags, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (fd)
+		*fd = static_cast<int>(sc_ret);
+	return 0;
 }
-int Sysdeps<Open>::operator()(const char *, int, unsigned int, int *) {
-	STUB();
+int Sysdeps<VmMap>::operator()(
+    void *hint, size_t size, int prot, int flags, int fd, off_t offset, void **window
+) {
+	auto sc_ret = syscall(SYS_MMAP, hint, size, prot, flags, fd, offset);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	*window = reinterpret_cast<void *>(sc_ret);
+	return 0;
 }
-int Sysdeps<VmMap>::operator()(void *, size_t, int, int, int, off_t, void **) {
-	STUB();
+int Sysdeps<VmUnmap>::operator()(void *pointer, size_t size) {
+	auto sc_ret = syscall(SYS_MUNMAP, pointer, size);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
-int Sysdeps<VmUnmap>::operator()(void *, size_t) {
-	STUB();
-}
-int Sysdeps<ClockGet>::operator()(int, time_t *, long *) {
-	STUB();
+int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
+	auto sc_ret = syscall(SYS_CLOCK_GET, clock, secs, nanos);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
 
 } // namespace mlibc
