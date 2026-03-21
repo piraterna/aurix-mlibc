@@ -7,11 +7,21 @@ namespace mlibc {
 struct AurixSysdepsTags :
 	LibcPanic,
 	LibcLog,
-	Exit,
-	Open,
-	Read,
+	Isatty,
 	Write,
-	Close
+	TcbSet,
+	AnonAllocate,
+	AnonFree,
+	Seek,
+	Exit,
+	Close,
+	FutexWake,
+	FutexWait,
+	Read,
+	Open,
+	VmMap,
+	VmUnmap,
+	ClockGet
 {};
 
 template<typename Tag>

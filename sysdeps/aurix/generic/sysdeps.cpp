@@ -5,17 +5,11 @@
 #include <mlibc/all-sysdeps.hpp>
 #include <string.h>
 
-#define SYS_EXIT 0
-#define SYS_WRITE 1
-#define SYS_MMAP 2
-
-// ANCHOR: stub
 #define STUB()                                                                                     \
 	({                                                                                             \
 		__ensure(!"STUB function was called");                                                     \
 		__builtin_unreachable();                                                                   \
 	})
-// ANCHOR_END: stub
 
 namespace mlibc {
 
