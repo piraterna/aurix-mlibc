@@ -21,6 +21,7 @@
 #define SYS_FORK 16
 #define SYS_CHDIR 17
 #define SYS_WAITPID 18
+#define SYS_EXECVE 19
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -185,5 +186,9 @@ int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags,
 	return 0;
 }
 
+int Sysdeps<Execve>::operator()(const char *path, char *const argv[], char *const envp[]) {
+	long ret;
+	return syscall(SYS_EXECVE, &ret, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
+}
 
 } // namespace mlibc
