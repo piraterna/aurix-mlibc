@@ -16,6 +16,7 @@
 #define SYS_MUNMAP 11
 #define SYS_CLOCK_GET 12
 #define SYS_SET_FS_BASE 13
+#define SYS_MPROTECT 14
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -97,6 +98,7 @@ int Sysdeps<FutexWait>::operator()(int *pointer, int expected, timespec const *)
 		return EAGAIN;
 	return ENOSYS;
 }
+
 int Sysdeps<Read>::operator()(int fd, void *buf, unsigned long size, long *ret) {
 	auto sc_ret = syscall(SYS_READ, fd, buf, size);
 	if (int e = sc_error(sc_ret); e)
@@ -105,6 +107,7 @@ int Sysdeps<Read>::operator()(int fd, void *buf, unsigned long size, long *ret) 
 		*ret = sc_ret;
 	return 0;
 }
+
 int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, int *fd) {
 	auto sc_ret = syscall(SYS_OPEN, path, flags, mode);
 	if (int e = sc_error(sc_ret); e)
@@ -113,6 +116,7 @@ int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, in
 		*fd = static_cast<int>(sc_ret);
 	return 0;
 }
+
 int Sysdeps<VmMap>::operator()(
     void *hint, size_t size, int prot, int flags, int fd, off_t offset, void **window
 ) {
@@ -122,12 +126,21 @@ int Sysdeps<VmMap>::operator()(
 	*window = reinterpret_cast<void *>(sc_ret);
 	return 0;
 }
+
 int Sysdeps<VmUnmap>::operator()(void *pointer, size_t size) {
 	auto sc_ret = syscall(SYS_MUNMAP, pointer, size);
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
 }
+
+int Sysdeps<VmProtect>::operator()(void *pointer, size_t size, int prot) {
+	auto sc_ret = syscall(SYS_MPROTECT, pointer, size, prot);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
 int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
 	auto sc_ret = syscall(SYS_CLOCK_GET, clock, secs, nanos);
 	if (int e = sc_error(sc_ret); e)
