@@ -187,8 +187,10 @@ int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags,
 }
 
 int Sysdeps<Execve>::operator()(const char *path, char *const argv[], char *const envp[]) {
-	long ret;
-	return syscall(SYS_EXECVE, &ret, (uint64_t)path, (uint64_t)argv, (uint64_t)envp);
+	auto sc_ret = syscall(SYS_EXECVE, path, argv, envp);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
 
 } // namespace mlibc
