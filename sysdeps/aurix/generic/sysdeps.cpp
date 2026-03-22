@@ -19,6 +19,7 @@
 #define SYS_MPROTECT 14
 #define SYS_GETCWD 15
 #define SYS_FORK 16
+#define SYS_CHDIR 17
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -163,6 +164,13 @@ int Sysdeps<Fork>::operator()(pid_t *child) {
 		return e;
 	if (child)
 		*child = static_cast<pid_t>(sc_ret);
+	return 0;
+}
+
+int Sysdeps<Chdir>::operator()(const char *path) {
+	auto sc_ret = syscall(SYS_CHDIR, path);
+	if (int e = sc_error(sc_ret); e)
+		return e;
 	return 0;
 }
 

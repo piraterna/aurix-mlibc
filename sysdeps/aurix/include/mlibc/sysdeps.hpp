@@ -24,7 +24,8 @@ struct AurixSysdepsTags :
 	VmProtect,
 	ClockGet,
     GetCwd,
-    Fork 
+    Fork,
+	Chdir 
 {};
 
 template<typename Tag>
