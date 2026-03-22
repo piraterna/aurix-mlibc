@@ -292,6 +292,7 @@ elif host_machine.system() == 'demo'
 # ANCHOR_END: demo-sysdeps
 elif host_machine.system() == 'aurix'
 	subdir('sysdeps/aurix')
+	internal_conf.set10('MLIBC_RTLD_DEBUG', true)
 else
 	error('No sysdeps defined for OS: ' + host_machine.system())
 endif
