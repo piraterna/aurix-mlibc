@@ -22,7 +22,9 @@ struct AurixSysdepsTags :
 	VmMap,
 	VmUnmap,
 	VmProtect,
-	ClockGet
+	ClockGet,
+    GetCwd,
+    Fork 
 {};
 
 template<typename Tag>

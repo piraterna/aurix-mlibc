@@ -17,6 +17,8 @@
 #define SYS_CLOCK_GET 12
 #define SYS_SET_FS_BASE 13
 #define SYS_MPROTECT 14
+#define SYS_GETCWD 15
+#define SYS_FORK 16
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -145,6 +147,22 @@ int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
 	auto sc_ret = syscall(SYS_CLOCK_GET, clock, secs, nanos);
 	if (int e = sc_error(sc_ret); e)
 		return e;
+	return 0;
+}
+
+int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
+	auto sc_ret = syscall(SYS_GETCWD, buffer, size);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Fork>::operator()(pid_t *child) {
+	auto sc_ret = syscall(SYS_FORK);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (child)
+		*child = static_cast<pid_t>(sc_ret);
 	return 0;
 }
 
