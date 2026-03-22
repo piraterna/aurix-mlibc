@@ -20,6 +20,7 @@
 #define SYS_GETCWD 15
 #define SYS_FORK 16
 #define SYS_CHDIR 17
+#define SYS_WAITPID 18
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -173,5 +174,16 @@ int Sysdeps<Chdir>::operator()(const char *path) {
 		return e;
 	return 0;
 }
+
+int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags,
+					 struct rusage *, pid_t *ret_pid) {
+	auto sc_ret = syscall(SYS_WAITPID, pid, status, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (ret_pid)
+		*ret_pid = static_cast<pid_t>(sc_ret);
+	return 0;
+}
+
 
 } // namespace mlibc
