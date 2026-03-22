@@ -22,6 +22,9 @@
 #define SYS_CHDIR 17
 #define SYS_WAITPID 18
 #define SYS_EXECVE 19
+#define SYS_OPENDIR 20
+#define SYS_READENTRIES 21
+#define SYS_STAT 22
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -122,6 +125,21 @@ int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, in
 	return 0;
 }
 
+int Sysdeps<OpenDir>::operator()(const char *path, int *handle) {
+	auto sc_ret = syscall(SYS_OPENDIR, path, handle);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int
+Sysdeps<ReadEntries>::operator()(int handle, void *buffer, size_t max_size, size_t *bytes_read) {
+	auto sc_ret = syscall(SYS_READENTRIES, handle, buffer, max_size, bytes_read);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
 int Sysdeps<VmMap>::operator()(
     void *hint, size_t size, int prot, int flags, int fd, off_t offset, void **window
 ) {
@@ -188,6 +206,16 @@ int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags,
 
 int Sysdeps<Execve>::operator()(const char *path, char *const argv[], char *const envp[]) {
 	auto sc_ret = syscall(SYS_EXECVE, path, argv, envp);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+
+int Sysdeps<Stat>::operator()(
+    mlibc::fsfd_target target, int fd, const char *path, int flags, struct stat *statbuf
+) {
+	auto sc_ret = syscall(SYS_STAT, static_cast<int>(target), fd, path, flags, statbuf);
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
