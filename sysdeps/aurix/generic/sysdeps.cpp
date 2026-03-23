@@ -31,6 +31,7 @@
 #define SYS_GETGID 26
 #define SYS_GETEGID 27
 #define SYS_GETPPID 28
+#define SYS_GETTID 29
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -263,6 +264,13 @@ gid_t Sysdeps<GetEgid>::operator()() {
 
 pid_t Sysdeps<GetPpid>::operator()() {
 	auto sc_ret = syscall(SYS_GETPPID);
+	if (int e = sc_error(sc_ret); e)
+		return (pid_t)-e;
+	return static_cast<pid_t>(sc_ret);
+}
+
+pid_t Sysdeps<GetTid>::operator()() {
+	auto sc_ret = syscall(SYS_GETTID);
 	if (int e = sc_error(sc_ret); e)
 		return (pid_t)-e;
 	return static_cast<pid_t>(sc_ret);
