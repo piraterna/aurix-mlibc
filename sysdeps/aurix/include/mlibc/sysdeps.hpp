@@ -31,7 +31,7 @@ struct AurixSysdepsTags :
 	Chdir,
 	Waitpid,
 	Execve,
-	GetPid,
+	GetPid
 {};
 
 template<typename Tag>
