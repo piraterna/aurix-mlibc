@@ -87,6 +87,13 @@
 #define TIOCSWINSZ 0x5414
 #endif
 
+#ifndef AT_FDCWD
+#define AT_FDCWD -100
+#endif
+#ifndef AT_REMOVEDIR
+#define AT_REMOVEDIR 0x200
+#endif
+
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
 } // namespace
