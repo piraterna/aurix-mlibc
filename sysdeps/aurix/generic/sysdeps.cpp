@@ -46,6 +46,18 @@
 #define SYS_DUP3 36
 #define SYS_PIPE 37
 #define SYS_PIPE2 38
+#define SYS_MKDIR 39
+#define SYS_MKDIRAT 40
+#define SYS_UNLINKAT 41
+#define SYS_RENAME 42
+#define SYS_SYMLINK 43
+#define SYS_SYMLINKAT 44
+#define SYS_LINK 45
+#define SYS_LINKAT 46
+#define SYS_CHMOD 47
+#define SYS_UMASK 48
+#define SYS_KILL 49
+#define SYS_SLEEP 50
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -232,6 +244,17 @@ int Sysdeps<ClockGet>::operator()(int clock, time_t *secs, long *nanos) {
 	return 0;
 }
 
+int Sysdeps<Sleep>::operator()(time_t *secs, long *nanos) {
+	if (*nanos >= 1000000000L)
+		return EINVAL;
+	auto sc_ret = syscall(SYS_SLEEP, *secs, *nanos);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	*secs = 0;
+	*nanos = 0;
+	return 0;
+}
+
 int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
 	auto sc_ret = syscall(SYS_GETCWD, buffer, size);
 	if (int e = sc_error(sc_ret); e)
@@ -267,6 +290,91 @@ Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags, struct rusage *,
 
 int Sysdeps<Execve>::operator()(const char *path, char *const argv[], char *const envp[]) {
 	auto sc_ret = syscall(SYS_EXECVE, path, argv, envp);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Mkdir>::operator()(const char *path, mode_t mode) {
+	auto sc_ret = syscall(SYS_MKDIR, path, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Mkdirat>::operator()(int dirfd, const char *path, mode_t mode) {
+	auto sc_ret = syscall(SYS_MKDIRAT, dirfd, path, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Unlinkat>::operator()(int dirfd, const char *path, int flags) {
+	auto sc_ret = syscall(SYS_UNLINKAT, dirfd, path, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Rmdir>::operator()(const char *path) {
+	return sysdep<Unlinkat>(AT_FDCWD, path, AT_REMOVEDIR);
+}
+
+int Sysdeps<Rename>::operator()(const char *path, const char *new_path) {
+	auto sc_ret = syscall(SYS_RENAME, path, new_path);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Link>::operator()(const char *old_path, const char *new_path) {
+	auto sc_ret = syscall(SYS_LINK, old_path, new_path);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Linkat>::operator()(
+    int olddirfd, const char *old_path, int newdirfd, const char *new_path, int flags
+) {
+	auto sc_ret = syscall(SYS_LINKAT, olddirfd, old_path, newdirfd, new_path, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Symlink>::operator()(const char *target_path, const char *link_path) {
+	auto sc_ret = syscall(SYS_SYMLINK, target_path, link_path);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Symlinkat>::operator()(const char *target_path, int dirfd, const char *link_path) {
+	auto sc_ret = syscall(SYS_SYMLINKAT, target_path, dirfd, link_path);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Chmod>::operator()(const char *pathname, mode_t mode) {
+	auto sc_ret = syscall(SYS_CHMOD, pathname, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Umask>::operator()(mode_t mode, mode_t *old) {
+	auto sc_ret = syscall(SYS_UMASK, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (old)
+		*old = static_cast<mode_t>(sc_ret);
+	return 0;
+}
+
+int Sysdeps<Kill>::operator()(pid_t pid, int signal) {
+	auto sc_ret = syscall(SYS_KILL, pid, signal);
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
