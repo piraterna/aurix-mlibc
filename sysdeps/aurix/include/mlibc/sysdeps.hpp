@@ -44,7 +44,15 @@ struct AurixSysdepsTags : LibcPanic,
                           Dup,
                           Dup2,
                           Pipe,
-                          Ioctl {};
+                          Ioctl,
+                          Tcgetattr,
+                          Tcsetattr,
+                          Tcsendbreak,
+                          Tcflow,
+                          Tcflush,
+                          Tcdrain,
+                          Tcgetwinsize,
+                          Tcsetwinsize {};
 
 template <typename Tag>
 using Sysdeps = SysdepOf<AurixSysdepsTags, Tag>;

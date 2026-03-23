@@ -7,6 +7,8 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 
 #define SYS_EXIT 0
 #define SYS_OPEN 1
@@ -45,6 +47,34 @@
 #define SYS_PIPE 37
 #define SYS_PIPE2 38
 
+#ifndef TCGETS
+#define TCGETS 0x5401
+#endif
+#ifndef TCSETS
+#define TCSETS 0x5402
+#endif
+#ifndef TCSETSW
+#define TCSETSW 0x5403
+#endif
+#ifndef TCSETSF
+#define TCSETSF 0x5404
+#endif
+#ifndef TCSBRK
+#define TCSBRK 0x5409
+#endif
+#ifndef TCXONC
+#define TCXONC 0x540A
+#endif
+#ifndef TCFLSH
+#define TCFLSH 0x540B
+#endif
+#ifndef TIOCGWINSZ
+#define TIOCGWINSZ 0x5413
+#endif
+#ifndef TIOCSWINSZ
+#define TIOCSWINSZ 0x5414
+#endif
+
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
 } // namespace
@@ -64,8 +94,11 @@ void Sysdeps<LibcLog>::operator()(const char *msg) {
 }
 
 int Sysdeps<Isatty>::operator()(int fd) {
-	(void)fd;
-	return 0; // no tty stuff impl
+	struct termios attr;
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCGETS, &attr);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
 
 int Sysdeps<Write>::operator()(int fd, void const *buf, size_t size, ssize_t *ret) {
@@ -302,6 +335,76 @@ int Sysdeps<Ioctl>::operator()(int fd, unsigned long request, void *arg, int *re
 		return e;
 	if (result)
 		*result = static_cast<int>(sc_ret);
+	return 0;
+}
+
+int Sysdeps<Tcgetattr>::operator()(int fd, struct termios *attr) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCGETS, attr);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcsetattr>::operator()(int fd, int optional_action, const struct termios *attr) {
+	int req;
+	switch (optional_action) {
+		case TCSANOW:
+			req = TCSETS;
+			break;
+		case TCSADRAIN:
+			req = TCSETSW;
+			break;
+		case TCSAFLUSH:
+			req = TCSETSF;
+			break;
+		default:
+			return EINVAL;
+	}
+	auto sc_ret = syscall(SYS_IOCTL, fd, req, attr);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcsendbreak>::operator()(int fd, int) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCSBRK, 0);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcflow>::operator()(int fd, int action) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCXONC, action);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcflush>::operator()(int fd, int queue) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCFLSH, queue);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcdrain>::operator()(int fd) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TCSBRK, 1);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcgetwinsize>::operator()(int fd, struct winsize *winsz) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TIOCGWINSZ, winsz);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Tcsetwinsize>::operator()(int fd, const struct winsize *winsz) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, TIOCSWINSZ, winsz);
+	if (int e = sc_error(sc_ret); e)
+		return e;
 	return 0;
 }
 
