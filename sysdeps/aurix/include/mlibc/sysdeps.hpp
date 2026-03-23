@@ -30,7 +30,8 @@ struct AurixSysdepsTags :
     Fork,
 	Chdir,
 	Waitpid,
-	Execve
+	Execve,
+	GetPid,
 {};
 
 template<typename Tag>

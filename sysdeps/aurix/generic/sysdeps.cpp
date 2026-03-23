@@ -25,6 +25,7 @@
 #define SYS_OPENDIR 20
 #define SYS_READENTRIES 21
 #define SYS_STAT 22
+#define SYS_GETPID 23
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -194,8 +195,8 @@ int Sysdeps<Chdir>::operator()(const char *path) {
 	return 0;
 }
 
-int Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags,
-					 struct rusage *, pid_t *ret_pid) {
+int
+Sysdeps<Waitpid>::operator()(pid_t pid, int *status, int flags, struct rusage *, pid_t *ret_pid) {
 	auto sc_ret = syscall(SYS_WAITPID, pid, status, flags);
 	if (int e = sc_error(sc_ret); e)
 		return e;
@@ -211,7 +212,6 @@ int Sysdeps<Execve>::operator()(const char *path, char *const argv[], char *cons
 	return 0;
 }
 
-
 int Sysdeps<Stat>::operator()(
     mlibc::fsfd_target target, int fd, const char *path, int flags, struct stat *statbuf
 ) {
@@ -219,6 +219,13 @@ int Sysdeps<Stat>::operator()(
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
+}
+
+pid_t Sysdeps<GetPid>::operator()() {
+	auto sc_ret = syscall(SYS_GETPID);
+	if (int e = sc_error(sc_ret); e)
+		return 0;
+	return static_cast<pid_t>(sc_ret);
 }
 
 } // namespace mlibc
