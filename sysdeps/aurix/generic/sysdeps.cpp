@@ -144,7 +144,6 @@ int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, in
 	return 0;
 }
 
-#if __MLIBC_POSIX_OPTION
 int Sysdeps<Openat>::operator()(int dirfd, const char *path, int flags, mode_t mode, int *fd) {
 	auto sc_ret = syscall(SYS_OPENAT, dirfd, path, flags, mode);
 	if (int e = sc_error(sc_ret); e)
@@ -153,7 +152,6 @@ int Sysdeps<Openat>::operator()(int dirfd, const char *path, int flags, mode_t m
 		*fd = static_cast<int>(sc_ret);
 	return 0;
 }
-#endif
 
 int Sysdeps<OpenDir>::operator()(const char *path, int *handle) {
 	auto sc_ret = syscall(SYS_OPENDIR, path, handle);
@@ -250,7 +248,6 @@ int Sysdeps<Stat>::operator()(
 	return 0;
 }
 
-#if __MLIBC_POSIX_OPTION
 int
 Sysdeps<Readlink>::operator()(const char *path, void *buffer, size_t max_size, ssize_t *length) {
 	auto sc_ret = syscall(SYS_READLINK, path, buffer, max_size, length);
@@ -307,7 +304,6 @@ int Sysdeps<Ioctl>::operator()(int fd, unsigned long request, void *arg, int *re
 		*result = static_cast<int>(sc_ret);
 	return 0;
 }
-#endif
 
 pid_t Sysdeps<GetPid>::operator()() {
 	auto sc_ret = syscall(SYS_GETPID);
