@@ -26,6 +26,11 @@
 #define SYS_READENTRIES 21
 #define SYS_STAT 22
 #define SYS_GETPID 23
+#define SYS_GETUID 24
+#define SYS_GETEUID 25
+#define SYS_GETGID 26
+#define SYS_GETEGID 27
+#define SYS_GETPPID 28
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -224,7 +229,42 @@ int Sysdeps<Stat>::operator()(
 pid_t Sysdeps<GetPid>::operator()() {
 	auto sc_ret = syscall(SYS_GETPID);
 	if (int e = sc_error(sc_ret); e)
-		return 0;
+		return (pid_t)-e;
+	return static_cast<pid_t>(sc_ret);
+}
+
+uid_t Sysdeps<GetUid>::operator()() {
+	auto sc_ret = syscall(SYS_GETUID);
+	if (int e = sc_error(sc_ret); e)
+		return (uid_t)-e;
+	return static_cast<uid_t>(sc_ret);
+}
+
+uid_t Sysdeps<GetEuid>::operator()() {
+	auto sc_ret = syscall(SYS_GETEUID);
+	if (int e = sc_error(sc_ret); e)
+		return (uid_t)-e;
+	return static_cast<uid_t>(sc_ret);
+}
+
+gid_t Sysdeps<GetGid>::operator()() {
+	auto sc_ret = syscall(SYS_GETGID);
+	if (int e = sc_error(sc_ret); e)
+		return (gid_t)-e;
+	return static_cast<gid_t>(sc_ret);
+}
+
+gid_t Sysdeps<GetEgid>::operator()() {
+	auto sc_ret = syscall(SYS_GETEGID);
+	if (int e = sc_error(sc_ret); e)
+		return (gid_t)-e;
+	return static_cast<gid_t>(sc_ret);
+}
+
+pid_t Sysdeps<GetPpid>::operator()() {
+	auto sc_ret = syscall(SYS_GETPPID);
+	if (int e = sc_error(sc_ret); e)
+		return (pid_t)-e;
 	return static_cast<pid_t>(sc_ret);
 }
 
