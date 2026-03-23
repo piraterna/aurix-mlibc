@@ -36,7 +36,20 @@ struct AurixSysdepsTags : LibcPanic,
                           Fork,
                           Chdir,
                           Waitpid,
-                          Execve {};
+                          Execve
+#if __MLIBC_POSIX_OPTION
+,
+                          Fcntl,
+                          Openat,
+                          Readlink,
+                          Poll,
+                          Dup,
+                          Dup2,
+                          Pipe,
+                          Ioctl
+#endif
+{
+};
 
 template <typename Tag>
 using Sysdeps = SysdepOf<AurixSysdepsTags, Tag>;

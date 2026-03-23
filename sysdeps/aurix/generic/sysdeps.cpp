@@ -1,8 +1,10 @@
 #include "mlibc/tcb.hpp"
 #include <abi-bits/errno.h>
+#include <abi-bits/fcntl.h>
 #include <abi-bits/vm-flags.h>
 #include <bits/syscall.h>
 #include <mlibc/all-sysdeps.hpp>
+#include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -11,6 +13,7 @@
 #define SYS_READ 2
 #define SYS_WRITE 3
 #define SYS_CLOSE 4
+#define SYS_IOCTL 6
 #define SYS_MMAP 9
 #define SYS_LSEEK 10
 #define SYS_MUNMAP 11
@@ -32,6 +35,15 @@
 #define SYS_GETEGID 27
 #define SYS_GETPPID 28
 #define SYS_GETTID 29
+#define SYS_FCNTL 30
+#define SYS_OPENAT 31
+#define SYS_READLINK 32
+#define SYS_POLL 33
+#define SYS_DUP 34
+#define SYS_DUP2 35
+#define SYS_DUP3 36
+#define SYS_PIPE 37
+#define SYS_PIPE2 38
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
@@ -132,6 +144,17 @@ int Sysdeps<Open>::operator()(const char *path, int flags, unsigned int mode, in
 	return 0;
 }
 
+#if __MLIBC_POSIX_OPTION
+int Sysdeps<Openat>::operator()(int dirfd, const char *path, int flags, mode_t mode, int *fd) {
+	auto sc_ret = syscall(SYS_OPENAT, dirfd, path, flags, mode);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (fd)
+		*fd = static_cast<int>(sc_ret);
+	return 0;
+}
+#endif
+
 int Sysdeps<OpenDir>::operator()(const char *path, int *handle) {
 	auto sc_ret = syscall(SYS_OPENDIR, path, handle);
 	if (int e = sc_error(sc_ret); e)
@@ -226,6 +249,65 @@ int Sysdeps<Stat>::operator()(
 		return e;
 	return 0;
 }
+
+#if __MLIBC_POSIX_OPTION
+int
+Sysdeps<Readlink>::operator()(const char *path, void *buffer, size_t max_size, ssize_t *length) {
+	auto sc_ret = syscall(SYS_READLINK, path, buffer, max_size, length);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Fcntl>::operator()(int fd, int request, va_list args, int *result) {
+	unsigned long arg = va_arg(args, unsigned long);
+	auto sc_ret = syscall(SYS_FCNTL, fd, request, arg);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (result)
+		*result = static_cast<int>(sc_ret);
+	return 0;
+}
+
+int Sysdeps<Dup>::operator()(int fd, int flags, int *newfd) {
+	auto sc_ret = syscall(SYS_DUP, fd, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (newfd)
+		*newfd = static_cast<int>(sc_ret);
+	return 0;
+}
+
+int Sysdeps<Dup2>::operator()(int fd, int flags, int newfd) {
+	auto sc_ret = syscall(SYS_DUP2, fd, newfd, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Pipe>::operator()(int *fds, int flags) {
+	auto sc_ret = syscall(SYS_PIPE2, fds, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Poll>::operator()(struct pollfd *fds, nfds_t count, int timeout, int *num_events) {
+	auto sc_ret = syscall(SYS_POLL, fds, count, timeout, num_events);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Ioctl>::operator()(int fd, unsigned long request, void *arg, int *result) {
+	auto sc_ret = syscall(SYS_IOCTL, fd, request, arg);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	if (result)
+		*result = static_cast<int>(sc_ret);
+	return 0;
+}
+#endif
 
 pid_t Sysdeps<GetPid>::operator()() {
 	auto sc_ret = syscall(SYS_GETPID);
