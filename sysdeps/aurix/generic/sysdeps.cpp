@@ -61,6 +61,7 @@
 #define SYS_SLEEP 50
 #define SYS_SIGACTION 51
 #define SYS_FACCESSAT 52
+#define SYS_UTIMENSAT 53
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -393,6 +394,15 @@ int Sysdeps<Kill>::operator()(pid_t pid, int signal) {
 int
 Sysdeps<Sigaction>::operator()(int signum, const struct sigaction *act, struct sigaction *oldact) {
 	auto sc_ret = syscall(SYS_SIGACTION, signum, act, oldact);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<Utimensat>::operator()(
+    int dirfd, const char *pathname, const struct timespec times[2], int flags
+) {
+	auto sc_ret = syscall(SYS_UTIMENSAT, dirfd, pathname, times, flags);
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
