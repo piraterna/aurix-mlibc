@@ -4,6 +4,7 @@
 #include <abi-bits/vm-flags.h>
 #include <bits/syscall.h>
 #include <mlibc/all-sysdeps.hpp>
+#include <signal.h>
 #include <stdarg.h>
 #include <stdint.h>
 #include <string.h>
@@ -58,6 +59,7 @@
 #define SYS_UMASK 48
 #define SYS_KILL 49
 #define SYS_SLEEP 50
+#define SYS_SIGACTION 51
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -382,6 +384,14 @@ int Sysdeps<Umask>::operator()(mode_t mode, mode_t *old) {
 
 int Sysdeps<Kill>::operator()(pid_t pid, int signal) {
 	auto sc_ret = syscall(SYS_KILL, pid, signal);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
+int
+Sysdeps<Sigaction>::operator()(int signum, const struct sigaction *act, struct sigaction *oldact) {
+	auto sc_ret = syscall(SYS_SIGACTION, signum, act, oldact);
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
