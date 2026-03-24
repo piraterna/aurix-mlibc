@@ -60,6 +60,7 @@
 #define SYS_KILL 49
 #define SYS_SLEEP 50
 #define SYS_SIGACTION 51
+#define SYS_FACCESSAT 52
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -580,6 +581,19 @@ pid_t Sysdeps<GetTid>::operator()() {
 	if (int e = sc_error(sc_ret); e)
 		return (pid_t)-e;
 	return static_cast<pid_t>(sc_ret);
+}
+
+int Sysdeps<Access>::operator()(const char *path, int mode) {
+	auto sc_ret = syscall(SYS_FACCESSAT, AT_FDCWD, path, mode, 0);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+int Sysdeps<Faccessat>::operator()(int dirfd, const char *pathname, int mode, int flags) {
+	auto sc_ret = syscall(SYS_FACCESSAT, dirfd, pathname, mode, flags);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
 }
 
 } // namespace mlibc
