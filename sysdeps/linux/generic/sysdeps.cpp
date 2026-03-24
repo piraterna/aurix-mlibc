@@ -2073,6 +2073,27 @@ int Sysdeps<GetAffinity>::operator()(pid_t pid, size_t cpusetsize, cpu_set_t *ma
 	return 0;
 }
 
+int Sysdeps<GetThreadaffinity>::operator()(pid_t tid, size_t cpusetsize, cpu_set_t *mask) {
+	auto ret = do_syscall(SYS_sched_getaffinity, tid, cpusetsize, mask);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<SetAffinity>::operator()(pid_t pid, size_t cpusetsize, const cpu_set_t *mask) {
+	auto ret = do_syscall(SYS_sched_setaffinity, pid, cpusetsize, mask);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<SetThreadaffinity>::operator()(pid_t tid, size_t cpusetsize, const cpu_set_t *mask) {
+	auto ret = do_syscall(SYS_sched_setaffinity, tid, cpusetsize, mask);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
 int Sysdeps<Waitid>::operator()(idtype_t idtype, id_t id, siginfo_t *info, int options) {
 	auto ret = do_syscall(SYS_waitid, idtype, id, info, options, 0);
 	if(int e = sc_error(ret); e)
@@ -2226,6 +2247,47 @@ int Sysdeps<Msgrcv>::operator()(int msqid, void *msgp, size_t msgsz, long msgtyp
 
 int Sysdeps<Msgsnd>::operator()(int msqid, const void *msgp, size_t msgsz, int msgflg) {
 	auto ret = do_syscall(SYS_msgsnd, msqid, msgp, msgsz, msgflg);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<MqOpen>::operator()(const char *name, int oflag, mode_t mode, mq_attr *attr, mqd_t *out) {
+	auto ret = do_syscall(SYS_mq_open, name, oflag, mode, attr);
+	if (int e = sc_error(ret); e)
+		return e;
+	if (out)
+		*out = sc_int_result<mqd_t>(ret);
+	return 0;
+}
+
+int Sysdeps<MqUnlink>::operator()(const char *name) {
+	auto ret = do_syscall(SYS_mq_unlink, name);
+	if (int e = sc_error(ret); e) {
+		// We need to translate Linux's EPERM to the POSIX-mandated EACCESS on permission denial.
+		if (e == EPERM)
+			return EACCES;
+		return e;
+	}
+	return 0;
+}
+
+int Sysdeps<MqReceive>::operator()(mqd_t mqdes, char *msg_ptr, size_t msg_len, unsigned *msg_prio) {
+	auto ret = do_syscall(SYS_mq_timedreceive, mqdes, msg_ptr, msg_len, msg_prio, nullptr);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<MqGetAttr>::operator()(mqd_t mqdes, mq_attr *mqstat) {
+	auto ret = do_syscall(SYS_mq_getsetattr, mqdes, nullptr, mqstat);
+	if (int e = sc_error(ret); e)
+		return e;
+	return 0;
+}
+
+int Sysdeps<MqSetAttr>::operator()(mqd_t mqdes, const mq_attr *mqstat, mq_attr *omqstat) {
+	auto ret = do_syscall(SYS_mq_getsetattr, mqdes, mqstat, omqstat);
 	if (int e = sc_error(ret); e)
 		return e;
 	return 0;
