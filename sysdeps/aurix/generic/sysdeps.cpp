@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <sys/utsname.h>
 #include <termios.h>
 
 #define SYS_EXIT 0
@@ -100,6 +101,15 @@
 
 namespace {
 inline int sc_error(long ret) { return ret < 0 ? -ret : 0; }
+inline void copy_uts_field(char *dst, size_t dst_size, const char *src) {
+	if (!dst_size)
+		return;
+	size_t len = strlen(src);
+	if (len >= dst_size)
+		len = dst_size - 1;
+	memcpy(dst, src, len);
+	dst[len] = '\0';
+}
 } // namespace
 
 namespace mlibc {
@@ -273,6 +283,34 @@ int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
 	return 0;
 }
 
+int Sysdeps<GetHostname>::operator()(char *buffer, size_t bufsize) {
+	struct utsname name;
+	int i = sysdep<Uname>(&name);
+	if (i)
+		return i;
+	if (bufsize >= sizeof(name.nodename))
+		bufsize = sizeof(name.nodename) - 1;
+	memcpy(buffer, name.nodename, bufsize);
+	return 0;
+}
+
+int Sysdeps<Uname>::operator()(struct utsname *buf) {
+	copy_uts_field(buf->sysname, sizeof(buf->sysname), "Aurix");
+	copy_uts_field(buf->nodename, sizeof(buf->nodename), "aurix");
+	copy_uts_field(buf->release, sizeof(buf->release), "0.0.0");
+	copy_uts_field(buf->version, sizeof(buf->version), "aurix");
+#if defined(__x86_64__)
+	copy_uts_field(buf->machine, sizeof(buf->machine), "x86_64");
+#elif defined(__aarch64__)
+	copy_uts_field(buf->machine, sizeof(buf->machine), "aarch64");
+#elif defined(__riscv)
+	copy_uts_field(buf->machine, sizeof(buf->machine), "riscv");
+#else
+	copy_uts_field(buf->machine, sizeof(buf->machine), "unknown");
+#endif
+	return 0;
+}
+
 int Sysdeps<Fork>::operator()(pid_t *child) {
 	auto sc_ret = syscall(SYS_FORK);
 	if (int e = sc_error(sc_ret); e)
@@ -399,6 +437,14 @@ Sysdeps<Sigaction>::operator()(int signum, const struct sigaction *act, struct s
 	return 0;
 }
 
+int Sysdeps<Sigprocmask>::operator()(int how, const sigset_t *set, sigset_t *old) {
+	if (how > 3)
+		return EINVAL;
+	(void)set;
+	(void)old;
+	return ENOSYS;
+}
+
 int Sysdeps<Utimensat>::operator()(
     int dirfd, const char *pathname, const struct timespec times[2], int flags
 ) {
@@ -423,6 +469,14 @@ Sysdeps<Readlink>::operator()(const char *path, void *buffer, size_t max_size, s
 	if (int e = sc_error(sc_ret); e)
 		return e;
 	return 0;
+}
+
+int Sysdeps<Readlinkat>::operator()(
+    int dirfd, const char *path, void *buffer, size_t max_size, ssize_t *length
+) {
+	if (dirfd != AT_FDCWD)
+		return ENOSYS;
+	return sysdep<Readlink>(path, buffer, max_size, length);
 }
 
 int Sysdeps<Fcntl>::operator()(int fd, int request, va_list args, int *result) {
