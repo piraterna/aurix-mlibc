@@ -63,6 +63,7 @@
 #define SYS_SIGACTION 51
 #define SYS_FACCESSAT 52
 #define SYS_UTIMENSAT 53
+#define SYS_GETPGID 54
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -638,6 +639,14 @@ pid_t Sysdeps<GetPpid>::operator()() {
 	if (int e = sc_error(sc_ret); e)
 		return (pid_t)-e;
 	return static_cast<pid_t>(sc_ret);
+}
+
+int Sysdeps<GetPgid>::operator()(pid_t pid, pid_t* pgid) {
+	auto sc_ret = syscall(SYS_GETPGID, pid);
+	if (int e = sc_error(sc_ret); e)
+		return (pid_t)-e;
+	*pgid = static_cast<pid_t>(sc_ret);
+	return 0;
 }
 
 pid_t Sysdeps<GetTid>::operator()() {
