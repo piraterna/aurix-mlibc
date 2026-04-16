@@ -111,6 +111,8 @@ inline void copy_uts_field(char *dst, size_t dst_size, const char *src) {
 	memcpy(dst, src, len);
 	dst[len] = '\0';
 }
+
+char _hostname[256] = "aurix";
 } // namespace
 
 namespace mlibc {
@@ -284,22 +286,40 @@ int Sysdeps<GetCwd>::operator()(char *buffer, size_t size) {
 	return 0;
 }
 
+int Sysdeps<SetHostname>::operator()(const char *buffer, size_t size) {
+	if (!buffer)
+		return EINVAL;
+
+	if (size >= sizeof(_hostname))
+		return ENAMETOOLONG;
+
+	memcpy(_hostname, buffer, size);
+	_hostname[size] = '\0';
+	return 0;
+}
+
 int Sysdeps<GetHostname>::operator()(char *buffer, size_t bufsize) {
-	struct utsname name;
-	int i = sysdep<Uname>(&name);
-	if (i)
-		return i;
-	if (bufsize >= sizeof(name.nodename))
-		bufsize = sizeof(name.nodename) - 1;
-	memcpy(buffer, name.nodename, bufsize);
+	if (!buffer)
+		return EINVAL;
+	if (bufsize == 0)
+		return EINVAL;
+
+	size_t len = strlen(_hostname);
+	size_t copy = len;
+
+	if (copy >= bufsize)
+		copy = bufsize - 1;
+
+	memcpy(buffer, _hostname, copy);
+	buffer[copy] = '\0';
 	return 0;
 }
 
 int Sysdeps<Uname>::operator()(struct utsname *buf) {
 	copy_uts_field(buf->sysname, sizeof(buf->sysname), "Aurix");
-	copy_uts_field(buf->nodename, sizeof(buf->nodename), "aurix");
+	copy_uts_field(buf->nodename, sizeof(buf->nodename), _hostname);
 	copy_uts_field(buf->release, sizeof(buf->release), "0.0.0");
-	copy_uts_field(buf->version, sizeof(buf->version), "aurix");
+	copy_uts_field(buf->version, sizeof(buf->version), "aurix-mlibc");
 #if defined(__x86_64__)
 	copy_uts_field(buf->machine, sizeof(buf->machine), "x86_64");
 #elif defined(__aarch64__)
@@ -647,6 +667,17 @@ int Sysdeps<GetPgid>::operator()(pid_t pid, pid_t* pgid) {
 		return (pid_t)-e;
 	*pgid = static_cast<pid_t>(sc_ret);
 	return 0;
+}
+
+int Sysdeps<GetSid>::operator()(pid_t pid, pid_t* sid) {
+	(void)pid;
+	(void)sid;
+	return ENOSYS;
+}
+
+int Sysdeps<SetSid>::operator()(pid_t* sid) {
+	(void)sid;
+	return ENOSYS;
 }
 
 pid_t Sysdeps<GetTid>::operator()() {
