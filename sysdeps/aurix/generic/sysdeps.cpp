@@ -1,5 +1,6 @@
 #include "mlibc/tcb.hpp"
 #include <abi-bits/errno.h>
+#include <abi-bits/fd_set.h>
 #include <abi-bits/fcntl.h>
 #include <abi-bits/vm-flags.h>
 #include <bits/syscall.h>
@@ -64,6 +65,7 @@
 #define SYS_FACCESSAT 52
 #define SYS_UTIMENSAT 53
 #define SYS_GETPGID 54
+#define SYS_PSELECT 55
 
 #ifndef TCGETS
 #define TCGETS 0x5401
@@ -540,6 +542,14 @@ int Sysdeps<Poll>::operator()(struct pollfd *fds, nfds_t count, int timeout, int
 	return 0;
 }
 
+int Sysdeps<Pselect>::operator()(int num_fds, fd_set *read_set, fd_set *write_set, fd_set *except_set,
+		const struct timespec *timeout, const sigset_t *sigmask, int *num_events) {
+	auto sc_ret = syscall(SYS_PSELECT, num_fds, read_set, write_set, except_set, timeout, sigmask, num_events);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	return 0;
+}
+
 int Sysdeps<Ioctl>::operator()(int fd, unsigned long request, void *arg, int *result) {
 	auto sc_ret = syscall(SYS_IOCTL, fd, request, arg);
 	if (int e = sc_error(sc_ret); e)
@@ -670,14 +680,25 @@ int Sysdeps<GetPgid>::operator()(pid_t pid, pid_t* pgid) {
 }
 
 int Sysdeps<GetSid>::operator()(pid_t pid, pid_t* sid) {
-	(void)pid;
-	(void)sid;
-	return ENOSYS;
+	if (!sid)
+		return EINVAL;
+	if (pid != 0)
+		return ENOSYS;
+	auto sc_ret = syscall(SYS_GETPID);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	*sid = static_cast<pid_t>(sc_ret);
+	return 0;
 }
 
 int Sysdeps<SetSid>::operator()(pid_t* sid) {
-	(void)sid;
-	return ENOSYS;
+	if (!sid)
+		return EINVAL;
+	auto sc_ret = syscall(SYS_GETPID);
+	if (int e = sc_error(sc_ret); e)
+		return e;
+	*sid = static_cast<pid_t>(sc_ret);
+	return 0;
 }
 
 pid_t Sysdeps<GetTid>::operator()() {
